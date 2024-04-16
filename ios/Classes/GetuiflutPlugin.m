@@ -183,6 +183,14 @@
 }
 
 - (void)GeTuiSdkDidReceiveNotification:(NSDictionary *)userInfo notificationCenter:(UNUserNotificationCenter *)center response:(UNNotificationResponse *)response fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler {
+    
+    [self pushLocalNotification:userInfo[@"payload"] userInfo:userInfo];
+    
+    if(completionHandler) {
+        // [ 参考代码，开发者注意根据实际需求自行修改 ] 根据APP需要自行修改参数值
+        completionHandler(UIBackgroundFetchResultNoData);
+    }
+    
     NSDate *time = response.notification.date;
 //    NSDictionary *userInfo = response.notification.request.content.userInfo;
     NSLog(@"\n>>>GTSDK %@\nTime:%@\n%@", NSStringFromSelector(_cmd), time, userInfo);
@@ -198,11 +206,44 @@
 }
 
 - (void)GeTuiSdkDidReceiveSlience:(NSDictionary *)userInfo fromGetui:(BOOL)fromGetui offLine:(BOOL)offLine appId:(NSString *)appId taskId:(NSString *)taskId msgId:(NSString *)msgId fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler {
+    
+    //本地通知UserInfo参数
+    NSDictionary *dic = nil;
+    if (fromGetui) {
+        //个推在线透传
+        //个推进行本地通知统计 userInfo中必须要有_gmid_参数
+        dic = @{@"_gmid_": [NSString stringWithFormat:@"%@:%@", taskId ?: @"", msgId ?: @""]};
+    } else {
+        //APNs静默通知
+        dic = userInfo;
+    }
+    if (fromGetui && offLine == NO) {
+        //个推通道+在线，发起本地通知
+        [self pushLocalNotification:userInfo[@"payload"] userInfo:dic];
+    }
+    if(completionHandler) {
+        // [ 参考代码，开发者注意根据实际需求自行修改 ] 根据APP需要自行修改参数值
+        completionHandler(UIBackgroundFetchResultNoData);
+    }
+    
     NSString *payloadMsg = userInfo[@"payload"];
     NSDictionary *payloadMsgDic = @{ @"taskId": taskId ?: @"", @"messageId": msgId ?: @"", @"payloadMsg" : payloadMsg, @"offLine" : @(offLine), @"fromGetui": @(fromGetui)};
     NSLog(@"\n>>>GTSDK GeTuiSdkDidReceiveSlience:%@", payloadMsgDic);
     [_channel invokeMethod:@"onReceivePayload" arguments:payloadMsgDic];
-    
+}
+
+- (void)pushLocalNotification:(NSString *)title userInfo:(NSDictionary *)userInfo {
+    /*本地通知无法触发通知扩展， 官网文档：
+     A UNNotificationServiceExtension object provides the entry point for a Notification Service app extension, which lets you customize the content of a remote notification before it is delivered to the user.
+     */
+    UNMutableNotificationContent *content = [UNMutableNotificationContent new];
+    content.title = title;
+    content.body = title;
+    content.userInfo = userInfo;
+    UNNotificationRequest *req = [UNNotificationRequest requestWithIdentifier:@"id1" content:content trigger:nil];
+    [[UNUserNotificationCenter currentNotificationCenter] addNotificationRequest:req withCompletionHandler:^(NSError * _Nullable error) {
+        NSLog(@"addNotificationRequest added");
+    }];
 }
 
 /// MARK: - AppLink
