@@ -188,16 +188,13 @@
     
     if(completionHandler) {
         // [ 参考代码，开发者注意根据实际需求自行修改 ] 根据APP需要自行修改参数值
-        completionHandler(UIBackgroundFetchResultNoData);
+        completionHandler(UIBackgroundFetchResultNewData);
     }
     
     NSDate *time = response.notification.date;
 //    NSDictionary *userInfo = response.notification.request.content.userInfo;
     NSLog(@"\n>>>GTSDK %@\nTime:%@\n%@", NSStringFromSelector(_cmd), time, userInfo);
     [_channel invokeMethod:@"onReceiveNotificationResponse" arguments:userInfo];
-    if (completionHandler) {
-        completionHandler(UIBackgroundFetchResultNoData);
-    }
 }
 
 - (void)GeTuiSdkNotificationCenter:(UNUserNotificationCenter *)center openSettingsForNotification:(UNNotification *)notification {
@@ -223,7 +220,7 @@
     }
     if(completionHandler) {
         // [ 参考代码，开发者注意根据实际需求自行修改 ] 根据APP需要自行修改参数值
-        completionHandler(UIBackgroundFetchResultNoData);
+        completionHandler(UIBackgroundFetchResultNewData);
     }
     
     NSString *payloadMsg = userInfo[@"payload"];
